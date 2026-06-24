@@ -1,0 +1,67 @@
+services:
+  equipe-app:
+    container_name: equipe-app-container
+    build: .
+    volumes:
+      - ./src:/app/src:ro
+    ports:
+      - '4000:4000'
+    env_file:
+      - ./.env
+    depends_on:
+      - mongo
+      - redis
+
+  auth-server:
+    container_name: auth-server-container
+    build: .
+    volumes:
+      - ./src:/app/src:ro
+    ports:
+      - '3000:3000'
+    env_file:
+      - ./.env
+    command: npm run dev-server
+
+  frontend:
+    container_name: equipe-frontend-container
+    build: ./frontend
+    ports:
+      - '5173:80'
+    depends_on:
+      - equipe-app
+      - auth-server
+  mongo:
+    image: mongo
+    container_name: mongo-container
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-express-container
+    restart: always
+    ports:
+      - '8081:8081'
+    environment:
+      ME_CONFIG_BASICAUTH_USERNAME: root
+      ME_CONFIG_BASICAUTH_PASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+  redis:
+    image: redis
+    container_name: redis-container
+  nginx:
+    image: nginx
+    container_name: nginx-container
+    ports:
+      - '8080:80'
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - equipe-app
+      - mongo
+      - redis
+volumes:
+  mongo-data:
